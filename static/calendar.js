@@ -18,7 +18,7 @@ function getMonthsBetween(startISO, endISO){
   return months;
 }
 
-function renderMonth(root, monthObj, allowedStart, allowedEnd, selectedSet){
+function renderMonth(root, monthObj, allowedStart, allowedEnd, selectedSet, availDetails){
   const year = monthObj.year;
   const month = monthObj.month;
   const first = new Date(year, month, 1);
@@ -66,33 +66,98 @@ function renderMonth(root, monthObj, allowedStart, allowedEnd, selectedSet){
       cell.classList.add('disabled');
       cell.disabled = true;
     } else {
-      if(selectedSet.has(ds)) {
+      const detail = availDetails[ds];
+      if(detail){
+        // Apply status styling
+        cell.classList.add(detail.status);
+        
+        const statusText = {
+          'pending': 'En attente',
+          'approved': 'Convoqué',
+          'declined': 'Refusé'
+        }[detail.status] || detail.status;
+        
+        const badge = document.createElement('div');
+        badge.className = 'status-badge';
+        badge.textContent = statusText;
+        cell.appendChild(badge);
+        
+        if(detail.status === 'approved' && detail.service){
+          const detailDiv = document.createElement('div');
+          detailDiv.className = 'detail-text';
+          detailDiv.textContent = `${detail.service}`;
+          cell.appendChild(detailDiv);
+          
+          if(detail.start_time && detail.end_time){
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'detail-text';
+            timeDiv.textContent = `${detail.start_time}-${detail.end_time}`;
+            cell.appendChild(timeDiv);
+          }
+        }
+        
+        // Allow toggling only if pending or not submitted
+        if(detail.status === 'pending'){
+          cell.addEventListener('click', ()=>{
+            cell.classList.toggle('selected');
+            if(cell.classList.contains('selected')){
+              selectedSet.add(ds);
+            } else {
+              selectedSet.delete(ds);
+            }
+          });
+        } else {
+          // Approved/declined can't be toggled
+          cell.style.cursor = 'default';
+        }
+      } else if(selectedSet.has(ds)) {
         cell.classList.add('selected');
         const label = document.createElement('div');
         label.className = 'disponible-label';
         label.textContent = 'Disponible';
         cell.appendChild(label);
-      }
-      cell.addEventListener('click', ()=>{
-        cell.classList.toggle('selected');
-        const existingLabel = cell.querySelector('.disponible-label');
-        if(cell.classList.contains('selected')){
-          selectedSet.add(ds);
-          // Trigger the pulse animation
-          cell.classList.remove('pulse');
-          void cell.offsetWidth; // trigger reflow
-          cell.classList.add('pulse');
-          if(!existingLabel){
-            const label = document.createElement('div');
-            label.className = 'disponible-label';
-            label.textContent = 'Disponible';
-            cell.appendChild(label);
+        
+        cell.addEventListener('click', ()=>{
+          cell.classList.toggle('selected');
+          const existingLabel = cell.querySelector('.disponible-label');
+          if(cell.classList.contains('selected')){
+            selectedSet.add(ds);
+            cell.classList.remove('pulse');
+            void cell.offsetWidth;
+            cell.classList.add('pulse');
+            if(!existingLabel){
+              const label = document.createElement('div');
+              label.className = 'disponible-label';
+              label.textContent = 'Disponible';
+              cell.appendChild(label);
+            }
+          } else {
+            selectedSet.delete(ds);
+            if(existingLabel) existingLabel.remove();
           }
-        } else {
-          selectedSet.delete(ds);
-          if(existingLabel) existingLabel.remove();
-        }
-      });
+        });
+      } else {
+        // Not selected, allow clicking
+        cell.addEventListener('click', ()=>{
+          cell.classList.toggle('selected');
+          const existingLabel = cell.querySelector('.disponible-label');
+          if(cell.classList.contains('selected')){
+            selectedSet.add(ds);
+            cell.classList.remove('pulse');
+            void cell.offsetWidth;
+            cell.classList.add('pulse');
+            if(!existingLabel){
+              const label = document.createElement('div');
+              label.className = 'disponible-label';
+              label.textContent = 'Disponible';
+              cell.appendChild(label);
+            }
+          } else {
+            selectedSet.delete(ds);
+            if(existingLabel) existingLabel.remove();
+          }
+        });
+      }
     }
     grid.appendChild(cell);
   }
@@ -125,10 +190,11 @@ document.addEventListener('DOMContentLoaded', ()=>{
   monthSelect.value = current;
 
   const selectedSet = new Set(SELECTED);
+  const availDetails = AVAILABILITIES || {};
 
   function showCurrent(){
     const m = months[current];
-    renderMonth(root, m, START, END, selectedSet);
+    renderMonth(root, m, START, END, selectedSet, availDetails);
     monthSelect.value = current;
   }
 

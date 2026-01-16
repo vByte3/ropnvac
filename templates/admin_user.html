@@ -18,12 +18,31 @@
       <input name="rio" type="text" value="{{ user.rio }}" style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; transition: all 0.3s ease;" onFocus="this.style.borderColor='#667eea'; this.style.boxShadow='0 0 0 3px rgba(102,126,234,0.1)';" onBlur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';">
     </div>
     <div style="margin-bottom: 1.5rem;">
+      <label style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 600;">Email</label>
+      <input name="email" type="email" value="{{ user.email or '' }}" style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; transition: all 0.3s ease;" onFocus="this.style.borderColor='#667eea'; this.style.boxShadow='0 0 0 3px rgba(102,126,234,0.1)';" onBlur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';">
+    </div>
+    <div style="margin-bottom: 1.5rem;">
+      <label style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 600;">Téléphone</label>
+      <input name="phone" type="text" value="{{ user.phone or '' }}" style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; transition: all 0.3s ease;" onFocus="this.style.borderColor='#667eea'; this.style.boxShadow='0 0 0 3px rgba(102,126,234,0.1)';" onBlur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';">
+    </div>
+    <div style="margin-bottom: 1.5rem;">
       <label style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 600;">Grade</label>
       <input name="rank" type="text" value="{{ user.rank }}" style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; transition: all 0.3s ease;" onFocus="this.style.borderColor='#667eea'; this.style.boxShadow='0 0 0 3px rgba(102,126,234,0.1)';" onBlur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';">
     </div>
     <div style="margin-bottom: 2rem;">
       <label style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 600;">Date Limite</label>
       <input name="date_limit" type="date" value="{{ user.date_limit }}" style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; transition: all 0.3s ease;" onFocus="this.style.borderColor='#667eea'; this.style.boxShadow='0 0 0 3px rgba(102,126,234,0.1)';" onBlur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';">
+    </div>
+    <div style="margin-bottom: 1.5rem;">
+      <label style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 600;">Statut</label>
+      <select name="status" style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+        <option value="active" {% if user.status == 'active' %}selected{% endif %}>Actif</option>
+        <option value="suspended" {% if user.status == 'suspended' %}selected{% endif %}>Suspendu</option>
+      </select>
+    </div>
+    <div style="margin-bottom: 2rem;">
+      <label style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 600;">Nouveau mot de passe (optionnel)</label>
+      <input name="new_password" type="password" placeholder="Laisser vide pour ne pas changer" style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
     </div>
     <button type="submit" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75rem 2rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; width: 100%; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102,126,234,0.4);" onMouseOver="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102,126,234,0.6)';" onMouseOut="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102,126,234,0.4)';">Enregistrer</button>
   </form>
@@ -38,5 +57,26 @@
       </ul>
     </div>
   {% endif %}
+
+  <div style="margin-top: 2rem; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+    <h3 style="color: #1a1a2e; margin-bottom: 1rem;">Notes Admin</h3>
+    <form method="post" action="/admin/user/{{ user.id }}/note" style="margin-bottom: 1rem; display: grid; gap: 0.75rem;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <textarea name="note" rows="3" placeholder="Ajouter une note" style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;"></textarea>
+      <button type="submit" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 0.6rem 1rem; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; width: 180px;">Ajouter</button>
+    </form>
+    {% if notes %}
+      <ul style="list-style: none; padding: 0; margin: 0;">
+        {% for n in notes %}
+          <li style="padding: 0.65rem 0; border-bottom: 1px solid #e5e7eb;">
+            <div style="color: #111827; font-weight: 600;">{{ n.created_by }} · {{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+            <div style="color: #374151; margin-top: 0.2rem; white-space: pre-wrap;">{{ n.note }}</div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div style="color: #6b7280;">Aucune note.</div>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}

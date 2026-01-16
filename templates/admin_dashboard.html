@@ -1,28 +1,107 @@
 {% extends 'base.html' %}
 {% block title %}Tableau de Bord Admin{% endblock %}
 {% block content %}
-<h2 style="color: #1a1a2e; text-align: center; margin-bottom: 2rem;">👨‍💼 Tableau de Bord Admin</h2>
-<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow-x: auto;">
-  <table style="width: 100%; border-collapse: collapse;">
+<h2 style="color: #1a1a2e; text-align: center; margin-bottom: 1.5rem;">👨‍💼 Tableau de Bord Admin</h2>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+  <div style="background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); color: white; padding: 1.25rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,102,204,0.25);">
+    <div style="font-size: 0.9rem; opacity: 0.9;">Réservistes</div>
+    <div style="font-size: 1.8rem; font-weight: 700;">{{ total_users }}</div>
+  </div>
+  <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 1.25rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(16,185,129,0.25);">
+    <div style="font-size: 0.9rem; opacity: 0.9;">Jours demandés (mois en cours)</div>
+    <div style="font-size: 1.8rem; font-weight: 700;">{{ total_month_days }}</div>
+  </div>
+  <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 1.25rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(249,158,11,0.25);">
+    <div style="font-size: 0.9rem; opacity: 0.9;">Proches de la limite (≥ {{ near_limit_threshold }})</div>
+    <div style="font-size: 1.8rem; font-weight: 700;">{{ near_limit_count }}</div>
+  </div>
+</div>
+
+{% if near_limit_users %}
+<div style="margin-bottom: 1.25rem; background: #fff7ed; border: 1px solid #fed7aa; color: #b45309; padding: 0.9rem 1rem; border-radius: 10px; box-shadow: 0 4px 12px rgba(249,158,11,0.18);">
+  <strong>Alerte seuil {{ near_limit_threshold }} jours :</strong>
+  <div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.5rem;">
+    {% for entry in near_limit_users %}
+      <span style="background:#fff1e6; border:1px solid #fb923c; color:#9a3412; padding:0.35rem 0.6rem; border-radius:999px; font-weight:600;">{{ entry.user.rio }} · {{ entry.user.name }} {{ entry.user.surname }} ({{ entry.used }}j)</span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<form method="get" style="background: white; padding: 1rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; align-items: end; margin-bottom: 1.5rem;">
+  <div>
+    <label style="display: block; font-weight: 600; margin-bottom: 0.35rem; color: #333;">Recherche</label>
+    <input name="q" value="{{ q }}" placeholder="Nom, prénom ou RIO" style="width: 100%; padding: 0.65rem 0.8rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+  </div>
+  <div>
+    <label style="display: block; font-weight: 600; margin-bottom: 0.35rem; color: #333;">Grade</label>
+    <select name="rank" style="width: 100%; padding: 0.65rem 0.8rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+      <option value="">Tous</option>
+      <option value="PA" {% if rank_filter == 'PA' %}selected{% endif %}>PA</option>
+      <option value="GPX" {% if rank_filter == 'GPX' %}selected{% endif %}>GPX</option>
+    </select>
+  </div>
+  <div>
+    <label style="display: block; font-weight: 600; margin-bottom: 0.35rem; color: #333;">Tri</label>
+    <select name="sort" style="width: 100%; padding: 0.65rem 0.8rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+      <option value="id" {% if sort == 'id' %}selected{% endif %}>Par ID</option>
+      <option value="name" {% if sort == 'name' %}selected{% endif %}>Prénom</option>
+      <option value="surname" {% if sort == 'surname' %}selected{% endif %}>Nom</option>
+      <option value="rio" {% if sort == 'rio' %}selected{% endif %}>RIO</option>
+      <option value="rank" {% if sort == 'rank' %}selected{% endif %}>Grade</option>
+      <option value="used_desc" {% if sort == 'used_desc' %}selected{% endif %}>Jours utilisés (desc)</option>
+      <option value="used_asc" {% if sort == 'used_asc' %}selected{% endif %}>Jours utilisés (asc)</option>
+    </select>
+  </div>
+  <div style="display: flex; gap: 0.5rem;">
+    <button type="submit" style="flex: 1; background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); color: white; border: none; border-radius: 8px; padding: 0.7rem 1rem; font-weight: 700; cursor: pointer;">Filtrer</button>
+    <a href="/admin" style="flex: 1; text-align: center; background: #f3f4f6; color: #111827; border-radius: 8px; padding: 0.7rem 1rem; font-weight: 600; text-decoration: none; border: 1px solid #e5e7eb;">Réinitialiser</a>
+  </div>
+</form>
+
+<div style="margin-bottom: 1rem; text-align: right; display:flex; justify-content:flex-end; gap:0.5rem; flex-wrap:wrap;">
+  <a href="/admin/announcements" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; padding: 0.65rem 1.1rem; border-radius: 10px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 12px rgba(249,115,22,0.35);">Annonces</a>
+  <a href="/admin/calendar_all" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.65rem 1.1rem; border-radius: 10px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 12px rgba(16,185,129,0.35);">Calendrier global</a>
+  <a href="/admin/create_user" style="display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 0.65rem 1.1rem; border-radius: 10px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 12px rgba(37,99,235,0.35);">Créer un utilisateur</a>
+</div>
+
+<div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow-x: auto;">
+  <table style="width: 100%; border-collapse: collapse; min-width: 720px;">
     <thead>
       <tr style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white;">
-        <th style="padding: 1rem; text-align: left; font-weight: 600;">ID</th>
-        <th style="padding: 1rem; text-align: left; font-weight: 600;">Prénom</th>
-        <th style="padding: 1rem; text-align: left; font-weight: 600;">Nom</th>
-        <th style="padding: 1rem; text-align: left; font-weight: 600;">Grade</th>
-        <th style="padding: 1rem; text-align: left; font-weight: 600;">Actions</th>
+        <th style="padding: 0.85rem; text-align: left; font-weight: 600;">ID</th>
+        <th style="padding: 0.85rem; text-align: left; font-weight: 600;">RIO</th>
+        <th style="padding: 0.85rem; text-align: left; font-weight: 600;">Prénom</th>
+        <th style="padding: 0.85rem; text-align: left; font-weight: 600;">Nom</th>
+        <th style="padding: 0.85rem; text-align: left; font-weight: 600;">Grade</th>
+        <th style="padding: 0.85rem; text-align: left; font-weight: 600;">Jours utilisés</th>
+        <th style="padding: 0.85rem; text-align: left; font-weight: 600;">Restant</th>
+        <th style="padding: 0.85rem; text-align: left; font-weight: 600;">Actions</th>
       </tr>
     </thead>
     <tbody>
-      {% for user in users %}
+      {% if entries %}
+      {% for entry in entries %}
+      {% set user = entry.user %}
       <tr style="border-bottom: 1px solid #e0e0e0; transition: all 0.3s ease;" onMouseOver="this.style.backgroundColor='#f8f9ff';" onMouseOut="this.style.backgroundColor='white';">
-        <td style="padding: 1rem; color: #333;">{{ user.id }}</td>
-        <td style="padding: 1rem; color: #333;">{{ user.name }}</td>
-        <td style="padding: 1rem; color: #333;">{{ user.surname }}</td>
-        <td style="padding: 1rem; color: #333;"><strong>{{ user.rank }}</strong></td>
-        <td style="padding: 1rem;"><a href="/admin/user/{{ user.id }}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(102,126,234,0.3);" onMouseOver="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(102,126,234,0.5)';" onMouseOut="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 8px rgba(102,126,234,0.3)';">Modifier</a></td>
+        <td style="padding: 0.85rem; color: #333;">{{ user.id }}</td>
+        <td style="padding: 0.85rem; color: #333; font-weight: 700;">{{ user.rio }}</td>
+        <td style="padding: 0.85rem; color: #333;">{{ user.name }}</td>
+        <td style="padding: 0.85rem; color: #333;">{{ user.surname }}</td>
+        <td style="padding: 0.85rem; color: #333;"><strong>{{ user.rank }}</strong></td>
+        <td style="padding: 0.85rem; color: #333;">{{ entry.used }}</td>
+        <td style="padding: 0.85rem; color: #10b981; font-weight: 700;">{{ entry.remaining }}</td>
+        <td style="padding: 0.85rem;">
+          <a href="/admin/user/{{ user.id }}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.45rem 0.9rem; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(102,126,234,0.3);" onMouseOver="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(102,126,234,0.5)';" onMouseOut="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 8px rgba(102,126,234,0.3)';">Modifier</a>
+        </td>
       </tr>
       {% endfor %}
+      {% else %}
+      <tr>
+        <td colspan="8" style="padding: 1rem; text-align: center; color: #6b7280;">Aucun utilisateur trouvé.</td>
+      </tr>
+      {% endif %}
     </tbody>
   </table>
 </div>

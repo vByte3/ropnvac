@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+{% block title %}Calendrier Global{% endblock %}
+{% block content %}
+<h2 style="color: #1a1a2e; text-align: center; margin-bottom: 1rem;">🗓️ Calendrier global (tous les réservistes)</h2>
+
+<div style="max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.9rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+    <div style="display:flex; gap:0.5rem;">
+      <span style="display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; background:#e0ecff; color:#1d4ed8; font-weight:600;">■ PA</span>
+      <span style="display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; background:#d1fae5; color:#047857; font-weight:600;">■ GPX</span>
+      <span style="display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; background:#e5e7eb; color:#374151; font-weight:600;">■ Autre</span>
+    </div>
+    <div style="display:flex; gap:0.5rem;">
+      <a href="/admin/calendar_all?status=pending" style="padding:0.5rem 0.9rem; background:{% if status_filter == 'pending' %}#f59e0b{% else %}#fff{% endif %}; color:{% if status_filter == 'pending' %}white{% else %}#f59e0b{% endif %}; border:2px solid #f59e0b; border-radius:8px; font-weight:700; text-decoration:none;">En attente</a>
+      <a href="/admin/calendar_all?status=approved" style="padding:0.5rem 0.9rem; background:{% if status_filter == 'approved' %}#10b981{% else %}#fff{% endif %}; color:{% if status_filter == 'approved' %}white{% else %}#10b981{% endif %}; border:2px solid #10b981; border-radius:8px; font-weight:700; text-decoration:none;">Approuvées</a>
+      <a href="/admin/calendar_all?status=declined" style="padding:0.5rem 0.9rem; background:{% if status_filter == 'declined' %}#ef4444{% else %}#fff{% endif %}; color:{% if status_filter == 'declined' %}white{% else %}#ef4444{% endif %}; border:2px solid #ef4444; border-radius:8px; font-weight:700; text-decoration:none;">Refusées</a>
+    </div>
+  </div>
+
+  <div class="month-controls" style="display: flex; align-items: center; gap: 0.6rem; background: white; padding: 0.85rem 1rem; border-radius: 10px; box-shadow: 0 3px 12px rgba(0,0,0,0.08);">
+    <button id="prev-month" type="button" aria-label="Mois précédent" style="padding: 0.4rem 0.75rem; background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">◀</button>
+    <select id="month-select" aria-label="Sélectionner un mois" style="padding: 0.45rem 0.8rem; border: 1px solid #e0e0e0; border-radius: 6px; cursor: pointer; font-weight: 500; background: white;"></select>
+    <button id="next-month" type="button" aria-label="Mois suivant" style="padding: 0.4rem 0.75rem; background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">▶</button>
+    <span style="flex: 1;"></span>
+    <div id="month-range" style="color: #666; font-size: 0.95rem;"></div>
+  </div>
+
+  <div id="calendar-root" class="calendar-root" aria-live="polite" style="background: white; padding: 1.25rem; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); width: 100%;"></div>
+
+  <div style="background: white; padding: 1rem; border-radius: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.06);">
+    <h3 style="margin-top: 0; color: #111827;">Demandes détaillées (mois courant)</h3>
+    <div id="list-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0.6rem;"></div>
+  </div>
+</div>
+
+<!-- Review Modal -->
+<div id="review-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:white; padding:1.5rem; border-radius:12px; max-width:500px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <h3 style="margin-top:0; color:#111827;" id="modal-title">Réviser la demande</h3>
+    <form method="post" id="review-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" id="modal-action">
+      
+      <div id="approve-fields" style="display:none;">
+        <div style="margin-bottom:0.75rem;">
+          <label style="display:block; font-weight:700; margin-bottom:0.25rem; color:#111827;">Service</label>
+          <input name="service" id="modal-service" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #e0e0e0; border-radius:8px;" placeholder="Ex: Sécurité publique">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-bottom:0.75rem;">
+          <div>
+            <label style="display:block; font-weight:700; margin-bottom:0.25rem; color:#111827;">Heure début</label>
+            <input type="time" name="start_time" id="modal-start" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #e0e0e0; border-radius:8px;">
+          </div>
+          <div>
+            <label style="display:block; font-weight:700; margin-bottom:0.25rem; color:#111827;">Heure fin</label>
+            <input type="time" name="end_time" id="modal-end" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #e0e0e0; border-radius:8px;">
+          </div>
+        </div>
+      </div>
+      
+      <div style="margin-bottom:0.75rem;">
+        <label style="display:block; font-weight:700; margin-bottom:0.25rem; color:#111827;">Note admin (optionnel)</label>
+        <textarea name="admin_note" id="modal-note" rows="3" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #e0e0e0; border-radius:8px; resize:vertical;"></textarea>
+      </div>
+      
+      <div style="display:flex; gap:0.5rem; justify-content:flex-end;">
+        <button type="button" onclick="closeModal()" style="padding:0.6rem 1rem; background:#f3f4f6; color:#111827; border:1px solid #e5e7eb; border-radius:8px; font-weight:700; cursor:pointer;">Annuler</button>
+        <button type="submit" id="modal-submit" style="padding:0.6rem 1rem; background:#0066cc; color:white; border:none; border-radius:8px; font-weight:700; cursor:pointer;">Confirmer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  /* Flexbox month view to fit a full month without horizontal scroll */
+  .calendar-grid-month { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 1rem; justify-content: flex-start; }
+  .calendar-grid-month > * { box-sizing: border-box; }
+  .weekday-header, .cal-cell, .cal-cell.empty { flex: 0 0 calc((100% - 6 * 0.45rem) / 7); }
+  .weekday-header { font-weight: 700; text-align: center; padding: 0.45rem; background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); color: white; border-radius: 6px; font-size: 0.9rem; }
+  .cal-cell { min-height: 80px; max-height: 80px; border: 1px solid #e0e0e0; border-radius: 8px; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.35rem; transition: all 0.2s ease; overflow: hidden; }
+  .cal-cell:hover { border-color: #0066cc; box-shadow: 0 3px 8px rgba(0,102,204,0.15); }
+  .cal-cell.empty { background: transparent; border: none; cursor: default; min-height: 80px; max-height: 80px; }
+  .cal-cell.disabled { opacity: 0.35; cursor: not-allowed; }
+  .day-num { font-size: 1.05rem; font-weight: 700; color: #1a1a2e; line-height: 1; }
+  .day-name { font-size: 0.72rem; color: #777; margin-top: 0.15rem; }
+  .user-tag { background: #0066cc; color: white; padding: 0.18rem 0.45rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; line-height: 1.2; margin-top: 4px; }
+</style>
+
+<script>
+  const START = '{{ start }}';
+  const END = '{{ end }}';
+  const EVENTS = {{ events|tojson }};
+  const rankColors = { 'PA': '#2563eb', 'GPX': '#10b981', 'OTHER': '#6b7280' };
+  const statusColors = { 'pending': '#f59e0b', 'approved': '#10b981', 'declined': '#ef4444' };
+  const WEEKDAYS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+
+  function iso(d){ return d.toISOString().slice(0,10); }
+  function getMonthsBetween(startISO, endISO){
+    const start = new Date(startISO);
+    const end = new Date(endISO);
+    const months = [];
+    let cur = new Date(start.getFullYear(), start.getMonth(), 1);
+    const last = new Date(end.getFullYear(), end.getMonth(), 1);
+    while(cur <= last){
+      const year = cur.getFullYear();
+      const month = cur.getMonth();
+      const label = cur.toLocaleString('fr-FR', {month:'long', year:'numeric'});
+      const monthStart = new Date(year, month, 1).toISOString().slice(0,10);
+      const monthEnd = new Date(year, month+1, 0).toISOString().slice(0,10);
+      months.push({year, month, label, monthStart, monthEnd});
+      cur.setMonth(cur.getMonth()+1);
+    }
+    return months;
+  }
+
+  const monthSelect = document.getElementById('month-select');
+  const prevBtn = document.getElementById('prev-month');
+  const nextBtn = document.getElementById('next-month');
+  const monthRange = document.getElementById('month-range');
+  const months = getMonthsBetween(START, END);
+  let currentMonthIdx = 0;
+
+  // pick initial month as month containing START
+  for(let i=0;i<months.length;i++){
+    if(START >= months[i].monthStart && START <= months[i].monthEnd){ currentMonthIdx = i; break; }
+  }
+
+  function populateMonthSelect(){
+    monthSelect.innerHTML = '';
+    months.forEach((m, idx) => {
+      const opt = document.createElement('option');
+      opt.value = idx;
+      opt.textContent = m.label;
+      if(idx === currentMonthIdx) opt.selected = true;
+      monthSelect.appendChild(opt);
+    });
+  }
+
+  function renderMonth(root, monthObj, allowedStart, allowedEnd, eventMap){
+    const year = monthObj.year;
+    const month = monthObj.month;
+    const first = new Date(year, month, 1);
+    const lastDay = new Date(year, month+1, 0).getDate();
+
+    const grid = document.createElement('div');
+    grid.className = 'calendar-grid-month';
+
+    WEEKDAYS.forEach(w=>{
+      const h = document.createElement('div');
+      h.className = 'weekday-header';
+      h.textContent = w;
+      grid.appendChild(h);
+    });
+
+    const firstWeekday = (first.getDay()+6)%7;
+    for(let i=0;i<firstWeekday;i++){
+      const blank = document.createElement('div');
+      blank.className = 'cal-cell empty';
+      grid.appendChild(blank);
+    }
+
+    for(let d=1; d<=lastDay; d++){
+      const dateObj = new Date(year, month, d);
+      const ds = iso(dateObj);
+      const cell = document.createElement('div');
+      cell.className = 'cal-cell';
+
+      const dayNum = document.createElement('div');
+      dayNum.className = 'day-num';
+      dayNum.textContent = d;
+      const dayName = document.createElement('div');
+      dayName.className = 'day-name';
+      dayName.textContent = WEEKDAYS[(dateObj.getDay()+6)%7];
+      cell.appendChild(dayNum);
+      cell.appendChild(dayName);
+
+      if(ds < allowedStart || ds > allowedEnd){
+        cell.classList.add('disabled');
+      } else {
+        const users = eventMap.get(ds) || [];
+        if(users.length){
+          users.forEach(u => {
+            const tag = document.createElement('div');
+            tag.className = 'user-tag';
+            tag.textContent = `${u.name} ${u.surname} (${u.rank})`;
+            tag.style.background = statusColors[u.status] || rankColors[u.rank] || rankColors.OTHER;
+            tag.style.cursor = 'pointer';
+            tag.onclick = () => openModal(u);
+            cell.appendChild(tag);
+          });
+        } else {
+          const none = document.createElement('div');
+          none.textContent = '—';
+          none.style.color = '#999';
+          none.style.fontSize = '0.85rem';
+          none.style.marginTop = '4px';
+          cell.appendChild(none);
+        }
+      }
+
+      grid.appendChild(cell);
+    }
+
+    root.innerHTML = '';
+    root.appendChild(grid);
+  }
+
+  function render(){
+    const root = document.getElementById('calendar-root');
+    const eventMap = new Map();
+    EVENTS.forEach(ev => eventMap.set(ev.date, ev.users));
+
+    const m = months[currentMonthIdx];
+    monthRange.textContent = `${m.monthStart} — ${m.monthEnd}`;
+
+    renderMonth(root, m, START, END, eventMap);
+
+    const listContainer = document.getElementById('list-container');
+    listContainer.innerHTML = '';
+    const filteredEvents = EVENTS.filter(ev => ev.date >= m.monthStart && ev.date <= m.monthEnd).sort((a,b) => a.date.localeCompare(b.date));
+    filteredEvents.forEach(ev => {
+      const card = document.createElement('div');
+      card.style.border = '1px solid #e5e7eb';
+      card.style.borderRadius = '10px';
+      card.style.padding = '0.8rem 0.9rem';
+      card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
+
+      const title = document.createElement('div');
+      title.textContent = new Date(ev.date).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+      title.style.fontWeight = '700';
+      title.style.marginBottom = '0.25rem';
+      card.appendChild(title);
+
+      ev.users.forEach(u => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.gap = '8px';
+        row.style.marginBottom = '4px';
+        row.style.cursor = 'pointer';
+        row.onclick = () => openModal(u);
+
+        const dot = document.createElement('span');
+        dot.style.width = '10px';
+        dot.style.height = '10px';
+        dot.style.borderRadius = '999px';
+        dot.style.background = statusColors[u.status] || rankColors[u.rank] || rankColors.OTHER;
+        row.appendChild(dot);
+
+        const text = document.createElement('span');
+        let info = `${u.name} ${u.surname} (${u.rank}) · RIO ${u.rio}`;
+        if(u.status === 'approved' && u.service){
+          info += ` · ${u.service} ${u.start_time}-${u.end_time}`;
+        }
+        text.textContent = info;
+        text.style.color = '#111827';
+        text.style.fontSize = '0.92rem';
+        row.appendChild(text);
+
+        card.appendChild(row);
+      });
+
+      listContainer.appendChild(card);
+    });
+  }
+
+  populateMonthSelect();
+  monthSelect.value = currentMonthIdx;
+  render();
+
+  monthSelect.addEventListener('change', () => { currentMonthIdx = parseInt(monthSelect.value, 10) || 0; render(); });
+  prevBtn.addEventListener('click', () => { if(currentMonthIdx>0){ currentMonthIdx--; monthSelect.value = currentMonthIdx; render(); } });
+  nextBtn.addEventListener('click', () => { if(currentMonthIdx<months.length-1){ currentMonthIdx++; monthSelect.value = currentMonthIdx; render(); } });
+
+  function openModal(user){
+    const modal = document.getElementById('review-modal');
+    const form = document.getElementById('review-form');
+    const title = document.getElementById('modal-title');
+    const action = document.getElementById('modal-action');
+    const approveFields = document.getElementById('approve-fields');
+    const submitBtn = document.getElementById('modal-submit');
+    
+    form.action = `/admin/availability/${user.id}/review`;
+    title.textContent = `${user.name} ${user.surname} · ${user.rio}`;
+    
+    if(user.status === 'pending'){
+      approveFields.style.display = 'block';
+      action.value = 'approve';
+      submitBtn.textContent = 'Approuver';
+      submitBtn.style.background = '#10b981';
+      document.getElementById('modal-service').required = true;
+      document.getElementById('modal-start').required = true;
+      document.getElementById('modal-end').required = true;
+      // Add decline button
+      if(!document.getElementById('decline-btn')){
+        const declineBtn = document.createElement('button');
+        declineBtn.type = 'button';
+        declineBtn.id = 'decline-btn';
+        declineBtn.textContent = 'Refuser';
+        declineBtn.style.cssText = 'padding:0.6rem 1rem; background:#ef4444; color:white; border:none; border-radius:8px; font-weight:700; cursor:pointer;';
+        declineBtn.onclick = () => { action.value = 'decline'; approveFields.style.display = 'none'; submitBtn.textContent = 'Confirmer le refus'; submitBtn.style.background = '#ef4444'; document.getElementById('modal-service').required = false; document.getElementById('modal-start').required = false; document.getElementById('modal-end').required = false; };
+        submitBtn.parentElement.insertBefore(declineBtn, submitBtn);
+      }
+    } else {
+      approveFields.style.display = 'none';
+      action.value = 'view';
+      submitBtn.style.display = 'none';
+      const declineBtn = document.getElementById('decline-btn');
+      if(declineBtn) declineBtn.style.display = 'none';
+      document.getElementById('modal-service').value = user.service || '';
+      document.getElementById('modal-start').value = user.start_time || '';
+      document.getElementById('modal-end').value = user.end_time || '';
+      document.getElementById('modal-note').value = user.admin_note || '';
+    }
+    
+    modal.style.display = 'flex';
+  }
+
+  function closeModal(){
+    document.getElementById('review-modal').style.display = 'none';
+    document.getElementById('review-form').reset();
+    const declineBtn = document.getElementById('decline-btn');
+    if(declineBtn){ declineBtn.style.display = 'inline-block'; }
+    document.getElementById('modal-submit').style.display = 'inline-block';
+    document.getElementById('approve-fields').style.display = 'block';
+  }
+</script>
+{% endblock %}

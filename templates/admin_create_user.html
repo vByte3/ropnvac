@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Créer Utilisateur{% endblock %}
+{% block content %}
+<div style="max-width: 520px; margin: 2rem auto;">
+  <h2 style="color: #1a1a2e; text-align: center;">➕ Créer un utilisateur</h2>
+  <form method="post" style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div style="margin-bottom: 1rem;">
+      <label style="display: block; margin-bottom: 0.35rem; font-weight: 600; color: #111827;">Prénom</label>
+      <input name="name" required style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e5e7eb; border-radius: 10px;">
+    </div>
+    <div style="margin-bottom: 1rem;">
+      <label style="display: block; margin-bottom: 0.35rem; font-weight: 600; color: #111827;">Nom</label>
+      <input name="surname" required style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e5e7eb; border-radius: 10px;">
+    </div>
+    <div style="margin-bottom: 1rem;">
+      <label style="display: block; margin-bottom: 0.35rem; font-weight: 600; color: #111827;">RIO</label>
+      <input name="rio" required style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e5e7eb; border-radius: 10px;">
+    </div>
+    <div style="margin-bottom: 1rem;">
+      <label style="display: block; margin-bottom: 0.35rem; font-weight: 600; color: #111827;">Email</label>
+      <input name="email" type="email" style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e5e7eb; border-radius: 10px;">
+    </div>
+    <div style="margin-bottom: 1rem;">
+      <label style="display: block; margin-bottom: 0.35rem; font-weight: 600; color: #111827;">Téléphone</label>
+      <input name="phone" style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e5e7eb; border-radius: 10px;">
+    </div>
+    <div style="margin-bottom: 1rem;">
+      <label style="display: block; margin-bottom: 0.35rem; font-weight: 600; color: #111827;">Grade</label>
+      <select name="rank" required style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e5e7eb; border-radius: 10px;">
+        <option value="PA">PA</option>
+        <option value="GPX">GPX</option>
+      </select>
+    </div>
+    <div style="margin-bottom: 1rem;">
+      <label style="display: block; margin-bottom: 0.35rem; font-weight: 600; color: #111827;">Statut</label>
+      <select name="status" style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e5e7eb; border-radius: 10px;">
+        <option value="active" selected>Actif</option>
+        <option value="suspended">Suspendu</option>
+      </select>
+    </div>
+    <div style="margin-bottom: 1rem;">
+      <label style="display: block; margin-bottom: 0.35rem; font-weight: 600; color: #111827;">Date limite</label>
+      <input name="date_limit" type="date" required style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e5e7eb; border-radius: 10px;">
+    </div>
+    <div style="margin-bottom: 1.5rem;">
+      <label style="display: block; margin-bottom: 0.35rem; font-weight: 600; color: #111827;">Mot de passe</label>
+      <input name="password" type="password" required style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e5e7eb; border-radius: 10px;">
+      <small style="color: #6b7280;">Min 8 caractères, 1 majuscule, 1 minuscule, 1 chiffre.</small>
+    </div>
+    <button type="submit" style="width: 100%; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 0.9rem 1rem; border: none; border-radius: 10px; font-weight: 700; box-shadow: 0 4px 14px rgba(37,99,235,0.3); cursor: pointer;">Créer</button>
+  </form>
+</div>
+{% endblock %}
